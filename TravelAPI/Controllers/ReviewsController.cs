@@ -68,12 +68,20 @@ namespace TravelAPI.Controllers
 
     // PUT: api/Reviews/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, Review review)
+    public async Task<IActionResult> Put(int id, Review review, string UserName)
     {
-      if (id != review.ReviewId)
+
+      Review oldReview = await _db.Reviews.FindAsync(id);
+      //string oldUserName = oldReview.ReviewUserName;
+      // || oldUserName != UserName
+      if (id != review.ReviewId )
       {
         return BadRequest();
       }
+      // if(oldUserName != UserName)
+      // {
+      //   return "bad user name";
+      // }
 
       _db.Reviews.Update(review);
 
@@ -117,76 +125,58 @@ namespace TravelAPI.Controllers
       return NoContent();
     }
 
-    // GET: api/Reviews/5
     [HttpGet("popular")]
-     public async Task<ActionResult<IEnumerable<Review>>> GetPopularReview()
+     public string GetPopularReview()
     {
-        string reviewDestination ="a place";
-        // List<Review> userReviews = _db.Reviews.Where(entry => entry.ReviewDestination == reviewDestination).ToList();
-        // List<Review> UserReviews = _db.Reviews.GroupBy(entry.ReviewDestination == reviewDestination).ToList();
+      List<Review> userReviews = _db.Reviews.ToList();
+      IEnumerable<IGrouping<string,int>> query = userReviews.GroupBy(review => review.ReviewDestination, review => review.ReviewRating);
 
-/*
- var query = petsList.GroupBy(pet => Math.Floor(pet.Age),pet => pet.Age,
-        (baseAge, ages) => new
-        {
-            Key = baseAge,
-            Count = ages.Count(),
-            Min = ages.Min(),
-            Max = ages.Max()
-        });
+      // Dictionary<string, int> reviewGroup = new Dictionary<string,int>(){};
+      string bigRating = "";
+      int maxCount = -1;
+      foreach (IGrouping<string,int> destinationGroup in query)
+      {
+          if(maxCount < destinationGroup.Count())
+          {
+            maxCount = destinationGroup.Count();
+            bigRating = destinationGroup.Count() + ": " + destinationGroup.Key;
+          }
+          else if( maxCount == destinationGroup.Count())
+          {
+            bigRating = bigRating + ", " + destinationGroup.Key; 
+          }
+          //reviewGroup[destinationGroup.Key] = destinationGroup.Count();
+      }
+      IQueryable<Review> queryPopular = _db.Reviews.AsQueryable();
+      queryPopular = queryPopular.Where(entry => entry.ReviewDestination == bigRating);
 
-*/
-        List<Review> userReviews = _db.Reviews.ToList();
-        IEnumerable<IGrouping<string,int>> query = userReviews.GroupBy(review => review.ReviewDestination, review => review.ReviewRating);
-
-        Dictionary<string, int> reviewGroup = new Dictionary<string,int>(){};
-        foreach (IGrouping<string,int> destinationGroup in query)
-        {
-
-            reviewGroup[destinationGroup.Key] = destinationGroup.Count();
-        }
-        // var query = userReviews.GroupBy(entry =>entry.ReviewDestination, (something, somethingElse) => new
-        // {
-        //     Count = somethingElse.Count()
-        // });
-        // int count = -1;
-        // foreach(var result in query)
-        // {   
-        //     if(count < result.Count)
-        //     {
-        //         count = result.Count;
-        //     }
-        // }
-        Dictionary<string,int> dict = new Dictionary<string, int>();
-        // make target dictionary
-        // add list to dictionary, create destination and count value
-            /*
-            seattle: 3
-            cali: 5
-            portland: 2
-            anotherplace: 1
-            */
-        // go through dictionary and find most reviews
-
-        IQueryable<Review> query = _db.Reviews.AsQueryable();
-        query = query.Where(entry => entry.ReviewDestination == reviewDestination);
-
-        return await query.ToListAsync();
-
-    //   Review review = await _db.Reviews.FindAsync();
-    
-    //   if (review == null)
-    //   {
-    //     return NotFound();
-    //   }
-
-    //   return review;
-
-
-
-
-
+      //return await queryPopular.ToListAsync();
+      return bigRating;
     }
 
+      // add all groups to a list
+      // count the list
+      // random number from 1 - counted list
+      //return that index in the list to get all reviews from that destination
+    [HttpGet("random")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetRandomDestination()
+    {
+      Random rand = new Random();
+
+      List<Review> userReviews = _db.Reviews.ToList();
+      IEnumerable<IGrouping<string,int>> query = userReviews.GroupBy(review => review.ReviewDestination, review => review.ReviewRating);
+
+      List<string> randomDestinationList = new List<string>();
+      foreach (IGrouping<string,int> destinationGroup in query)
+      {
+        randomDestinationList.Add(destinationGroup.Key);
+      }
+      int randNumber = rand.Next(0,randomDestinationList.Count());
+      string randomDestination = randomDestinationList.ElementAt(randNumber);
+    
+      IQueryable<Review> queryRandom = _db.Reviews.AsQueryable();
+      queryRandom = queryRandom.Where(entry => entry.ReviewDestination == randomDestination);
+      return await queryRandom.ToListAsync();
+    }
   }
 }

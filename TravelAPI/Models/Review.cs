@@ -5,6 +5,7 @@ namespace TravelAPI.Models
   public class Review
   {
     public int ReviewId { get; set; }
+    [Required]
     [StringLength(255, ErrorMessage = "length can't exceed 255 characters")]
     public string ReviewDestination { get; set; }
     public string ReviewCountry { get; set; }
