@@ -71,10 +71,10 @@ namespace TravelAPI.Controllers
     public async Task<IActionResult> Put(int id, Review review, string UserName)
     {
 
-      Review oldReview = await _db.Reviews.FindAsync(id);
-      //string oldUserName = oldReview.ReviewUserName;
-      // || oldUserName != UserName
-      if (id != review.ReviewId )
+      //Review oldReview = await _db.Reviews.FindAsync(id);
+      string oldUserName = review.ReviewUserName;
+       
+      if (id != review.ReviewId || oldUserName != UserName)
       {
         return BadRequest();
       }
